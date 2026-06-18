@@ -13,6 +13,7 @@ import { ActionTracker } from "../agents/action-tracker.ts";
 import { ToolExecutor } from "../agents/tool-executor.ts";
 import { defaultAgentConfig } from "../agents/types.ts";
 import type { Plan, PlanStep } from "./types.ts";
+import { createWebTools } from "./web-tools.ts";
 
 
 
@@ -115,14 +116,14 @@ export async function generatePlan(goal : string) {
     const tracker = new ActionTracker();
     const executor = new ToolExecutor(tracker, config);
 
-    const hasweb = false;
+    const hasweb = !!process.env.FIRECRAWL_API_KEY;
+    
     const model = wrapLanguageModel({
         model : getAgentModel(),
         middleware : extractJsonMiddleware()
     });
 
-    // To implement Web search tools here 
-    const tools = {...readOnlyTools(executor)};
+    const tools = {...readOnlyTools(executor), ...(hasweb ? createWebTools(tracker) : {})};
 
     console.log(chalk.cyan('\n Resarching and Drafting a Plan... \n'));
 
@@ -148,9 +149,3 @@ export async function generatePlan(goal : string) {
     
     return {goal, researchSummary : validated.researchSummary, steps};
 }
-
-
-
-
-
-
